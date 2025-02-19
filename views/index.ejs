@@ -111,14 +111,8 @@
         padding: 0.75rem 2rem;
         border-radius: 50rem;
         transition: background-color 0.3s, color 0.3s, opacity 0.3s;
-      }
-      /* Pour le premier bouton, marge à droite de 20px */
-      .nav-pills .nav-item:first-child .nav-link {
-        margin-right: 20px;
-      }
-      /* Pour le deuxième bouton, marge à gauche de 20px */
-      .nav-pills .nav-item:last-child .nav-link {
-        margin-left: 20px;
+        margin: 0; /* Suppression des marges */
+        text-align: center; /* Centrage du contenu du bouton */
       }
       /* Style de l'onglet actif */
       .nav-pills .nav-link.active {
@@ -350,7 +344,7 @@
                   <div id="inputRows" class="mb-3">
                     <div class="row g-2 mb-2">
                       <div class="col-7">
-                        <input type="text" class="form-control form-control-sm" name="problem[]" placeholder="Description du problème" required />
+                        <input type="text" class="form-control form-control-sm" name="problem[]" placeholder="Description de l'élement" required />
                       </div>
                       <div class="col-3">
                         <input type="number" class="form-control form-control-sm" name="frequency[]" placeholder="Fréquence" required min="1" />
