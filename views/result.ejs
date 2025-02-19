@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analyse ABC - Rapport Professionnel</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    [x-cloak] { display: none !important; }
+    
+    .gradient-border {
+      position: relative;
+      background: white;
+    }
+    
+    .gradient-border::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      border-radius: 1rem;
+      padding: 2px;
+      background: linear-gradient(45deg, #1A237E 0%, #4A90E2 50%, #00BFA5 100%);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+    
+    /* Sur mobile, on réduit le padding de la section du graphique pour l'élargir */
+    @media (max-width: 640px) {
+      .chart-container {
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+      }
+    }
+  </style>
+</head>
+<body class="h-full bg-slate-50">
+  <div class="container mx-auto px-4 py-8 max-w-7xl" x-data="{ activeTab: 'A' }">
+    <div class="gradient-border rounded-2xl bg-white shadow-xl p-8 mb-8">
+      <!-- En-tête -->
+      <header class="mb-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div class="flex items-center gap-4">
+          <div class="p-4 bg-indigo-100 rounded-xl">
+            <i class="fas fa-chart-pie text-3xl text-indigo-600"></i>
+          </div>
+          <div>
+            <h1 class="text-3xl font-bold text-gray-900">Rapport de l'Analyse</h1>
+            <p class="text-gray-500 mt-1">Analyse des priorités et classification des éléments</p>
+          </div>
+        </div>
+        <button 
+          onclick="window.location.href='/upload'" 
+          class="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-all shadow-lg hover:shadow-indigo-200"
+        >
+          <i class="fas fa-redo"></i>
+          Nouvelle analyse
+        </button>
+      </header>
+
+      <!-- Cartes indicateurs -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-indigo-500">
+          <div class="text-gray-500 text-sm font-medium mb-2">Indice de Gini</div>
+          <div class="text-3xl font-bold text-gray-900"><%= giniIndex.toFixed(2) %></div>
+        </div>
+        
+        <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-blue-500">
+          <div class="text-gray-500 text-sm font-medium mb-2">Éléments analysés</div>
+          <div class="text-3xl font-bold text-gray-900"><%= data.length %></div>
+        </div>
+
+        <% if (giniClassification.aMax && giniClassification.bMax) { %>
+        <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-emerald-500">
+          <div class="text-gray-500 text-sm font-medium mb-4">Répartition ABC</div>
+          <div class="flex justify-between">
+            <div class="text-center">
+              <div class="text-emerald-600 font-bold text-xl"><%= giniClassification.aMax %>%</div>
+              <div class="text-xs text-emerald-500">Catégorie A</div>
+            </div>
+            <div class="text-center">
+              <div class="text-amber-600 font-bold text-xl"><%= giniClassification.bMax - giniClassification.aMax %>%</div>
+              <div class="text-xs text-amber-500">Catégorie B</div>
+            </div>
+            <div class="text-center">
+              <div class="text-rose-600 font-bold text-xl"><%= 100 - giniClassification.bMax %>%</div>
+              <div class="text-xs text-rose-500">Catégorie C</div>
+            </div>
+          </div>
+        </div>
+        <% } %>
+      </div>
+
+      <!-- Graphique Pareto -->
+      <!-- La classe "chart-container" permet d'ajuster le padding sur mobile -->
+      <div class="bg-white p-2 sm:p-6 rounded-xl shadow-sm mb-12 chart-container">
+        <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
+          <h3 class="text-lg font-semibold text-gray-900">Diagramme de Pareto</h3>
+          <div class="flex gap-2">
+            <span class="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-sm">
+              <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+              Catégorie A
+            </span>
+            <span class="flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-sm">
+              <div class="w-2 h-2 rounded-full bg-amber-500"></div>
+              Catégorie B
+            </span>
+            <span class="flex items-center gap-2 px-3 py-1 rounded-full bg-rose-100 text-rose-800 text-sm">
+              <div class="w-2 h-2 rounded-full bg-rose-500"></div>
+              Catégorie C
+            </span>
+          </div>
+        </div>
+        <div class="h-96">
+          <canvas id="paretoChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Contenu principal -->
+      <div class="grid lg:grid-cols-3 gap-8">
+        <!-- Colonne de recommandations -->
+        <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-sm h-fit lg:sticky lg:top-8">
+          <div class="mb-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Recommandations</h3>
+            <div class="bg-slate-50 p-4 rounded-lg">
+              <p class="text-sm text-gray-600 leading-relaxed">
+                <%= giniClassification.recommendation %>
+              </p>
+            </div>
+          </div>
+
+          <div class="border-t pt-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Détails techniques</h3>
+            <dl class="space-y-4">
+              <div class="flex justify-between items-center">
+                <dt class="text-sm text-gray-500">Échantillon analysé</dt>
+                <dd class="text-sm font-medium text-gray-900"><%= data.length %></dd>
+              </div>
+              <div class="flex justify-between items-center">
+                <dt class="text-sm text-gray-500">Méthode de calcul</dt>
+                <dd class="text-sm font-medium text-gray-900">Indice de Gini standard</dd>
+              </div>
+              <div class="bg-gray-50 p-4 rounded-lg">
+                <dt class="text-sm text-gray-600 mb-3 flex items-center">
+                  <i class="fas fa-wave-square text-gray-400 mr-2 text-sm"></i>
+                  Répartition des fréquences
+                </dt>
+                <dd class="space-y-3">
+                  <% ['A', 'B', 'C'].forEach((cat, i) => { %>
+                  <div class="flex justify-between items-center bg-white px-4 py-2.5 rounded-md shadow-sm">
+                    <div class="flex items-center">
+                      <span class="w-3 h-3 rounded-full <%= ['bg-emerald-500', 'bg-amber-500', 'bg-rose-500'][i] %> mr-3"></span>
+                      <span class="text-sm text-gray-600">Classe <%= cat %></span>
+                    </div>
+                    <span class="text-sm font-medium text-gray-900">
+                      <%= data.filter(d => d.category === cat).reduce((acc, d) => acc + d.value, 0) %>
+                    </span>
+                  </div>
+                  <% }) %>
+                </dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+
+        <!-- Onglets des catégories (modifié pour le scroll) -->
+        <div class="lg:col-span-2">
+          <div class="border-b border-gray-200 mb-6">
+            <nav class="flex gap-4" aria-label="Tabs">
+              <button
+                @click="activeTab = 'A'"
+                :class="activeTab === 'A' ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                class="pb-4 px-1 border-b-2 font-medium text-sm"
+              >
+                Catégorie A
+              </button>
+              <button
+                @click="activeTab = 'B'"
+                :class="activeTab === 'B' ? 'border-amber-500 text-amber-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                class="pb-4 px-1 border-b-2 font-medium text-sm"
+              >
+                Catégorie B
+              </button>
+              <button
+                @click="activeTab = 'C'"
+                :class="activeTab === 'C' ? 'border-rose-500 text-rose-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                class="pb-4 px-1 border-b-2 font-medium text-sm"
+              >
+                Catégorie C
+              </button>
+            </nav>
+          </div>
+
+          <% ['A', 'B', 'C'].forEach(cat => { 
+              const items = data.filter(d => d.category === cat);
+          %>
+          <div x-show="activeTab === '<%= cat %>'" x-cloak>
+            <div class="bg-white rounded-lg shadow-sm p-6">
+              <div class="flex justify-between items-start mb-4">
+                <div>
+                  <h4 class="text-base font-semibold text-gray-900">
+                    <%= items.length %> éléments
+                  </h4>
+                  <p class="text-sm text-gray-500 mt-1">
+                    <%= cat === 'A' ? `Priorité maximale (0-${giniClassification.aMax}%)` : 
+                       cat === 'B' ? `Attention nécessaire (${giniClassification.aMax}-${giniClassification.bMax}%)` : 
+                       `Surveillance minimale (> ${giniClassification.bMax}%)` %>
+                  </p>
+                </div>
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium 
+                    <%= cat === 'A' ? 'bg-emerald-100 text-emerald-800' : 
+                       cat === 'B' ? 'bg-amber-100 text-amber-800' : 
+                       'bg-rose-100 text-rose-800' %>">
+                  Catégorie <%= cat %>
+                </span>
+              </div>
+              
+              <% if(items.length > 0) { %>
+                <div class="max-h-96 overflow-y-auto space-y-3">
+                  <% items.forEach(item => { %>
+                  <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div class="flex items-center gap-3">
+                      <i class="fas <%= cat === 'A' ? 'fa-star text-emerald-500' : 
+                                    cat === 'B' ? 'fa-exclamation-triangle text-amber-500' : 
+                                    'fa-info-circle text-rose-500' %>"></i>
+                      <span class="text-sm font-medium text-gray-900"><%= item.name %></span>
+                    </div>
+                    <span class="text-sm text-gray-500"><%= item.value %></span>
+                  </div>
+                  <% }) %>
+                </div>
+              <% } else { %>
+                <div class="text-center py-8 text-gray-400">
+                  <i class="fas fa-inbox text-3xl mb-2"></i>
+                  <p class="text-sm">Aucun élément trouvé</p>
+                </div>
+              <% } %>
+            </div>
+          </div>
+          <% }) %>
+        </div>
+      </div>
+    </div>
+    <div class="bg-white rounded-xl shadow-lg p-6 mt-8 gradient-border">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <div>
+          <h3 class="text-xl font-bold text-gray-900">Répartition détaillée des éléments</h3>
+          <p class="text-sm text-gray-500 mt-1">Classés par fréquence décroissante</p>
+        </div>
+        <div class="flex items-center gap-2 bg-indigo-50 px-4 py-2 rounded-full">
+          <i class="fas fa-sort-amount-down-alt text-indigo-600"></i>
+          <span class="text-sm text-indigo-700">Trié par fréquence</span>
+        </div>
+      </div>
+    
+      <div class="overflow-x-auto">
+        <div class="max-h-[500px] overflow-y-auto border border-gray-200 rounded-lg shadow-inner">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50 sticky top-0">
+              <tr>
+                <th scope="col" class="pl-6 pr-3 py-3 text-left text-xs font-semibold text-indigo-600 uppercase tracking-wider">
+                  <i class="fas fa-align-left mr-2"></i>Description
+                </th>
+                <th scope="col" class="px-3 py-3 text-right text-xs font-semibold text-indigo-600 uppercase tracking-wider">
+                  <i class="fas fa-wave-square mr-2"></i>Fréquence
+                </th>
+                <th scope="col" class="px-3 py-3 text-right text-xs font-semibold text-indigo-600 uppercase tracking-wider">
+                  <i class="fas fa-percentage mr-2"></i>%
+                </th>
+                <th scope="col" class="pl-3 pr-6 py-3 text-right text-xs font-semibold text-indigo-600 uppercase tracking-wider">
+                  <i class="fas fa-chart-line mr-2"></i>% Cumulé
+                </th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <% 
+                let sortedData = data.sort((a, b) => b.value - a.value);
+                let total = sortedData.reduce((sum, item) => sum + item.value, 0);
+                let cumulativePercentage = 0;
+                
+                sortedData.forEach(item => {
+                  let percentage = (item.value / total) * 100;
+                  cumulativePercentage += percentage;
+              %>
+              <tr class="hover:bg-gray-50 transition-colors">
+                <td class="pl-6 pr-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900 flex items-center">
+                  <% if(item.category === 'A') { %>
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 mr-3"></span>
+                  <% } else if(item.category === 'B') { %>
+                    <span class="w-2 h-2 rounded-full bg-amber-500 mr-3"></span>
+                  <% } else { %>
+                    <span class="w-2 h-2 rounded-full bg-rose-500 mr-3"></span>
+                  <% } %>
+                  <%= item.name %>
+                </td>
+                <td class="px-3 py-4 whitespace-nowrap text-right text-sm text-gray-900 font-mono">
+                  <%= item.value.toLocaleString() %>
+                </td>
+                <td class="px-3 py-4 whitespace-nowrap text-right text-sm text-gray-900 font-mono">
+                  <%= percentage.toFixed(2) %>%
+                </td>
+                <td class="pl-3 pr-6 py-4 whitespace-nowrap text-right text-sm font-medium <%= cumulativePercentage <= 80 ? 'text-emerald-600' : cumulativePercentage <= 95 ? 'text-amber-600' : 'text-rose-600' %> font-mono">
+                  <%= cumulativePercentage.toFixed(2) %>%
+                </td>
+              </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    
+      <div class="mt-6 pt-4 border-t border-gray-200">
+        <div class="flex flex-wrap gap-4 text-sm text-gray-500">
+          <div class="flex items-center">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 mr-2"></span>
+            Cumul ≤ 80% (Catégorie A)
+          </div>
+          <div class="flex items-center">
+            <span class="w-2 h-2 rounded-full bg-amber-500 mr-2"></span>
+            Cumul 81-95% (Catégorie B)
+          </div>
+          <div class="flex items-center">
+            <span class="w-2 h-2 rounded-full bg-rose-500 mr-2"></span>
+            Cumul >95% (Catégorie C)
+          </div>
+        </div>
+      </div>
+    </div>    
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const ctx = document.getElementById('paretoChart').getContext('2d');
+      
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: <%- JSON.stringify(data.map(d => d.name)) %>,
+          datasets: [{
+            label: 'Valeurs',
+            data: <%- JSON.stringify(data.map(d => d.value)) %>,
+            backgroundColor: <%- JSON.stringify(data.map(d => 
+              d.category === 'A' ? 'rgba(102, 187, 106, 0.7)' :
+              d.category === 'B' ? 'rgba(255, 202, 40, 0.7)' : 
+              'rgba(239, 83, 80, 0.7)'
+            )) %>,
+            borderColor: <%- JSON.stringify(data.map(d => 
+              d.category === 'A' ? 'rgba(102, 187, 106, 1)' :
+              d.category === 'B' ? 'rgba(255, 202, 40, 1)' : 
+              'rgba(239, 83, 80, 1)'
+            )) %>,
+            borderWidth: 1,
+            yAxisID: 'y'
+          }, {
+            label: 'Pourcentage cumulé',
+            data: <%- JSON.stringify(data.map(d => d.cumulativePercentage)) %>,
+            type: 'line',
+            borderColor: '#3B82F6',
+            borderWidth: 2,
+            tension: 0.1,
+            yAxisID: 'y1',
+            pointRadius: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { 
+              position: 'top',
+              labels: {
+                usePointStyle: true,
+                padding: 20
+              }
+            },
+            tooltip: {
+              mode: 'index',
+              intersect: false
+            }
+          },
+          scales: {
+            y: {
+              title: { 
+                display: true, 
+                text: 'Valeurs absolues'
+              },
+              grid: { 
+                color: '#F3F4F6'
+              },
+              beginAtZero: true
+            },
+            y1: {
+              position: 'right',
+              max: 100,
+              title: { 
+                display: true, 
+                text: 'Pourcentage cumulé (%)'
+              },
+              grid: { display: false },
+              ticks: {
+                callback: function(value) {
+                  return value + '%';
+                }
+              }
+            },
+            x: {
+              grid: { display: false }
+            }
+          }
+        }
+      });
+    });
+  </script>
+</body>
+</html>
